@@ -1,7 +1,8 @@
-// auth.js (مصحح)
+// auth.js (مبسط ومصَحح)
 import { 
-  auth, database, ref, set, query, orderByChild, equalTo, get,
-  signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged 
+  auth, database, 
+  signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged,
+  ref, set, get, query, orderByChild, equalTo
 } from './firebase.js';
 
 // عناصر DOM
@@ -28,7 +29,7 @@ if (authTabs) {
             }
             
             // إخفاء أي رسائل سابقة
-            authMessage.classList.add('hidden');
+            hideAuthMessage();
         }
     });
 }
@@ -47,6 +48,7 @@ if (loginBtn) {
         }
         
         try {
+            showAuthMessage('جاري تسجيل الدخول...', 'info');
             const userCredential = await signInWithEmailAndPassword(auth, email, password);
             const user = userCredential.user;
             
@@ -80,6 +82,8 @@ if (signupBtn) {
         }
         
         try {
+            showAuthMessage('جاري إنشاء الحساب...', 'info');
+            
             let referredBy = null;
             
             // إذا كان هناك رمز إحالة، البحث عن المستخدم الذي يملكه
@@ -94,21 +98,21 @@ if (signupBtn) {
             const userCredential = await createUserWithEmailAndPassword(auth, email, password);
             const user = userCredential.user;
             
+            // إنشاء رمز إحالة فريد
+            const referralCode = generateReferralCode(user.uid);
+            
             // حفظ بيانات المستخدم الإضافية في قاعدة البيانات
             const userData = {
                 name: name,
                 phone: phone,
                 email: email,
                 address: address,
-                createdAt: Date.now(),
-                isAdmin: false,
+                referralCode: referralCode,
                 referralCount: 0,
+                joinDate: new Date().toISOString(),
+                isAdmin: false,
                 referredBy: referredBy
             };
-            
-            // إنشاء رمز إحالة فريد
-            const referralCode = generateReferralCode(user.uid);
-            userData.referralCode = referralCode;
             
             // حفظ بيانات المستخدم
             await set(ref(database, 'users/' + user.uid), userData);
@@ -149,6 +153,15 @@ function showAuthMessage(message, type) {
     authMessage.className = '';
     authMessage.classList.add(type + '-message');
     authMessage.classList.remove('hidden');
+    
+    // إخفاء الرسالة بعد 5 ثواني
+    setTimeout(hideAuthMessage, 5000);
+}
+
+function hideAuthMessage() {
+    if (authMessage) {
+        authMessage.classList.add('hidden');
+    }
 }
 
 function getAuthErrorMessage(code) {
@@ -214,41 +227,7 @@ async function updateReferrerData(referrerId, newUserId, userData) {
             
             await set(ref(database, `users/${referrerId}/referralCount`), currentCount + 1);
         }
-        
-        // تحديث مستويات الشبكة للمستخدم الذي أحال
-        await updateNetworkLevels(referrerId, newUserId, 1);
     } catch (error) {
         console.error("Error updating referrer data:", error);
-    }
-}
-
-// تحديث مستويات الشبكة
-async function updateNetworkLevels(sponsorId, newUserId, level) {
-    try {
-        // إذا كان المستخدم الذي أحال له مُحال من قبل آخر، نحدّث مستويات الشبكة
-        const sponsorRef = ref(database, 'users/' + sponsorId);
-        const snapshot = await get(sponsorRef);
-        
-        if (snapshot.exists()) {
-            const sponsorData = snapshot.val();
-            
-            if (sponsorData.referredBy) {
-                // تحديث المستوى التالي في الشبكة
-                const nextLevel = level + 1;
-                const networkData = {
-                    referredUserId: newUserId,
-                    timestamp: new Date().toISOString(),
-                    status: 'indirect',
-                    level: nextLevel
-                };
-                
-                await set(ref(database, `userReferrals/${sponsorData.referredBy}/${newUserId}`), networkData);
-                
-                // الاستمرار في تحديث المستويات الأعلى
-                await updateNetworkLevels(sponsorData.referredBy, newUserId, nextLevel);
-            }
-        }
-    } catch (error) {
-        console.error("Error updating network levels:", error);
     }
                   }
