@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>الملف الشخصي - تسريع</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="auth.css">
+    <link rel="stylesheet" href="profile.css">
+</head>
+<body>
+    <!-- شريط الرأس -->
+    <header>
+        <div class="header-content">
+            <a href="index.html" class="home-icon">
+                <i class="fas fa-home"></i>
+            </a>
+            <h1>تسريع</h1>
+        </div>
+    </header>
+
+    <!-- محتوى الصفحة -->
+    <div class="profile-container">
+        <div class="profile-card">
+            <div class="profile-header">
+                <h2>الملف الشخصي</h2>
+                <div class="admin-icon" id="admin-icon" style="display: none;">
+                    <i class="fas fa-crown"></i>
+                </div>
+            </div>
+            
+            <div class="profile-info">
+                <div class="info-group">
+                    <label>الاسم الكامل:</label>
+                    <span id="user-name">جاري التحميل...</span>
+                </div>
+                <div class="info-group">
+                    <label>البريد الإلكتروني:</label>
+                    <span id="user-email">جاري التحميل...</span>
+                </div>
+                <div class="info-group">
+                    <label>رقم الهاتف:</label>
+                    <span id="user-phone">جاري التحميل...</span>
+                </div>
+                <div class="info-group">
+                    <label>العنوان:</label>
+                    <span id="user-address">جاري التحميل...</span>
+                </div>
+                <div class="info-group">
+                    <label>تاريخ الانضمام:</label>
+                    <span id="join-date">جاري التحميل...</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="referral-card">
+            <h2>نظام الإحالة</h2>
+            
+            <div class="referral-stats">
+                <div class="stat-item">
+                    <div class="stat-number" id="referral-count">0</div>
+                    <div class="stat-label">عدد الإحالات</div>
+                </div>
+            </div>
+            
+            <div class="referral-code-section">
+                <label>كود الإحالة الخاص بك:</label>
+                <div class="code-display" id="referral-code">جاري التحميل...</div>
+            </div>
+            
+            <div class="referral-link-section">
+                <label>رابط الإحالة الخاص بك:</label>
+                <div class="link-input-group">
+                    <input type="text" id="referral-link" readonly>
+                    <button class="btn-copy" onclick="copyReferralLink()">
+                        <i class="fas fa-copy"></i>
+                    </button>
+                </div>
+            </div>
+            
+            <div class="share-buttons">
+                <button class="share-btn whatsapp" onclick="shareViaWhatsApp()">
+                    <i class="fab fa-whatsapp"></i> واتساب
+                </button>
+                <button class="share-btn facebook" onclick="shareViaFacebook()">
+                    <i class="fab fa-facebook"></i> فيسبوك
+                </button>
+                <button class="share-btn telegram" onclick="shareViaTelegram()">
+                    <i class="fab fa-telegram"></i> تلغرام
+                </button>
+            </div>
+            
+            <div class="action-buttons">
+                <button class="btn-primary" onclick="window.location.href='groups.html'">
+                    <i class="fas fa-users"></i> إدارة المجموعة
+                </button>
+                <button class="btn-secondary" id="logout-btn">
+                    <i class="fas fa-sign-out-alt"></i> تسجيل الخروج
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Firebase SDK -->
+    <script type="module" src="profile.js"></script>
+</body>
+</html>
