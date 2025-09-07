@@ -1,6 +1,6 @@
 // referral-system.js
 import { 
-    database, ref, set, push, onValue, update, query, orderByChild, equalTo 
+    database, ref, set, push, onValue, update, query, orderByChild, equalTo, get
 } from './firebase.js';
 
 // إنشاء رمز إحالة فريد للمستخدم
@@ -23,22 +23,29 @@ export async function saveReferralData(userId, userData, referredBy = null) {
             ...userData,
             referralCode: referralCode,
             referralCount: 0,
-            joinDate: new Date().toISOString()
+            joinDate: new Date().toISOString(),
+            referredBy: referredBy || null
         };
+        
+        // حفظ بيانات المستخدم الجديد
+        await set(ref(database, 'users/' + userId), updatedUserData);
+        
+        // حفظ رمز الإحالة للبحث السريع
+        await set(ref(database, 'referralCodes/' + referralCode), userId);
         
         // إذا كان هناك مستخدم أحاله، إضافة هذه المعلومة
         if (referredBy) {
-            updatedUserData.referredBy = referredBy;
-            
             // تحديث سجل الإحالات للمستخدم الذي أحال
             const referralData = {
                 referredUserId: userId,
+                name: userData.name,
+                email: userData.email,
                 timestamp: new Date().toISOString(),
                 status: 'completed',
                 level: 1 // المستوى المباشر
             };
             
-            await set(ref(database, `referrals/${referredBy}/${userId}`), referralData);
+            await set(ref(database, `userReferrals/${referredBy}/${userId}`), referralData);
             
             // زيادة عداد الإحالات للمستخدم الذي أحال
             await updateReferralCount(referredBy);
@@ -47,8 +54,6 @@ export async function saveReferralData(userId, userData, referredBy = null) {
             await updateNetworkLevels(referredBy, userId, 1);
         }
         
-        // حفظ بيانات المستخدم الجديد
-        await set(ref(database, 'users/' + userId), updatedUserData);
         return referralCode;
     } catch (error) {
         console.error("Error saving referral data:", error);
@@ -60,16 +65,16 @@ export async function saveReferralData(userId, userData, referredBy = null) {
 export async function updateReferralCount(userId) {
     try {
         const userRef = ref(database, 'users/' + userId);
-        onValue(userRef, (snapshot) => {
-            if (snapshot.exists()) {
-                const userData = snapshot.val();
-                const currentCount = userData.referralCount || 0;
-                
-                update(userRef, {
-                    referralCount: currentCount + 1
-                });
-            }
-        }, { onlyOnce: true });
+        const snapshot = await get(userRef);
+        
+        if (snapshot.exists()) {
+            const userData = snapshot.val();
+            const currentCount = userData.referralCount || 0;
+            
+            await update(userRef, {
+                referralCount: currentCount + 1
+            });
+        }
     } catch (error) {
         console.error("Error updating referral count:", error);
     }
@@ -80,27 +85,27 @@ async function updateNetworkLevels(sponsorId, newUserId, level) {
     try {
         // إذا كان المستخدم الذي أحال له مُحال من قبل آخر، نحدّث مستويات الشبكة
         const sponsorRef = ref(database, 'users/' + sponsorId);
-        onValue(sponsorRef, (snapshot) => {
-            if (snapshot.exists()) {
-                const sponsorData = snapshot.val();
+        const snapshot = await get(sponsorRef);
+        
+        if (snapshot.exists()) {
+            const sponsorData = snapshot.val();
+            
+            if (sponsorData.referredBy) {
+                // تحديث المستوى التالي في الشبكة
+                const nextLevel = level + 1;
+                const networkData = {
+                    referredUserId: newUserId,
+                    timestamp: new Date().toISOString(),
+                    status: 'indirect',
+                    level: nextLevel
+                };
                 
-                if (sponsorData.referredBy) {
-                    // تحديث المستوى التالي في الشبكة
-                    const nextLevel = level + 1;
-                    const networkData = {
-                        referredUserId: newUserId,
-                        timestamp: new Date().toISOString(),
-                        status: 'indirect',
-                        level: nextLevel
-                    };
-                    
-                    set(ref(database, `referrals/${sponsorData.referredBy}/${newUserId}`), networkData);
-                    
-                    // الاستمرار في تحديث المستويات الأعلى
-                    updateNetworkLevels(sponsorData.referredBy, newUserId, nextLevel);
-                }
+                await set(ref(database, `userReferrals/${sponsorData.referredBy}/${newUserId}`), networkData);
+                
+                // الاستمرار في تحديث المستويات الأعلى
+                await updateNetworkLevels(sponsorData.referredBy, newUserId, nextLevel);
             }
-        }, { onlyOnce: true });
+        }
     } catch (error) {
         console.error("Error updating network levels:", error);
     }
@@ -108,7 +113,7 @@ async function updateNetworkLevels(sponsorId, newUserId, level) {
 
 // جلب بيانات الإحالات للمستخدم
 export function getUserReferrals(userId, callback) {
-    const referralsRef = ref(database, `referrals/${userId}`);
+    const referralsRef = ref(database, `userReferrals/${userId}`);
     onValue(referralsRef, (snapshot) => {
         if (snapshot.exists()) {
             callback(snapshot.val());
@@ -116,6 +121,22 @@ export function getUserReferrals(userId, callback) {
             callback(null);
         }
     });
+}
+
+// الحصول على معرف المستخدم من خلال رمز الإحالة
+export async function getUserIdByReferralCode(referralCode) {
+    try {
+        const referralCodeRef = ref(database, `referralCodes/${referralCode}`);
+        const snapshot = await get(referralCodeRef);
+        
+        if (snapshot.exists()) {
+            return snapshot.val();
+        }
+        return null;
+    } catch (error) {
+        console.error("Error getting user by referral code:", error);
+        return null;
+    }
 }
 
 // البحث في الإحالات
@@ -140,10 +161,10 @@ export function searchReferrals(userId, searchTerm, levelFilter = 'all') {
             // تطبيق البحث
             if (searchTerm) {
                 results = results.filter(ref => {
-                    // سنحتاج لجلب بيانات المستخدم للبحث بالاسم
-                    // سيتم implement هذا الجزء في groups.js
                     return ref.id.includes(searchTerm) || 
-                           ref.referredUserId.includes(searchTerm);
+                           ref.referredUserId.includes(searchTerm) ||
+                           (ref.name && ref.name.includes(searchTerm)) ||
+                           (ref.email && ref.email.includes(searchTerm));
                 });
             }
             
@@ -151,3 +172,65 @@ export function searchReferrals(userId, searchTerm, levelFilter = 'all') {
         });
     });
 }
+
+// جلب بيانات المستخدم
+export async function getUserData(userId) {
+    try {
+        const userRef = ref(database, 'users/' + userId);
+        const snapshot = await get(userRef);
+        
+        if (snapshot.exists()) {
+            return snapshot.val();
+        }
+        return null;
+    } catch (error) {
+        console.error("Error getting user data:", error);
+        return null;
+    }
+}
+
+// تحميل الشبكة الكاملة
+export async function loadFullNetwork(userId, maxLevel = 5) {
+    const network = {};
+    await loadNetworkRecursive(userId, network, 0, maxLevel);
+    return network;
+}
+
+// تحميل الشبكة بشكل متكرر
+async function loadNetworkRecursive(userId, network, currentLevel, maxLevel) {
+    if (currentLevel > maxLevel) return;
+    
+    try {
+        const referralsRef = ref(database, `userReferrals/${userId}`);
+        const snapshot = await get(referralsRef);
+        
+        if (!snapshot.exists()) return;
+        
+        const referrals = snapshot.val();
+        network[userId] = {
+            level: currentLevel,
+            referrals: {}
+        };
+        
+        // تحميل بيانات المستخدم
+        const userData = await getUserData(userId);
+        network[userId].data = userData;
+        
+        // تحميل الإحالات بشكل متكرر
+        for (const referredUserId in referrals) {
+            network[userId].referrals[referredUserId] = {
+                data: referrals[referredUserId],
+                level: currentLevel + 1
+            };
+            
+            await loadNetworkRecursive(
+                referredUserId, 
+                network[userId].referrals, 
+                currentLevel + 1, 
+                maxLevel
+            );
+        }
+    } catch (error) {
+        console.error("Error loading network recursively:", error);
+    }
+                      }
