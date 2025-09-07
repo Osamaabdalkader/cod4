@@ -3,7 +3,7 @@ import {
   auth, database, ref, set, query, orderByChild, equalTo, onValue,
   signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged 
 } from './firebase.js';
-import { saveReferralData } from './referral-system.js';
+import { saveReferralData, getUserIdByReferralCode } from './referral-system.js';
 
 // عناصر DOM
 const authTabs = document.querySelector('.auth-tabs');
@@ -12,24 +12,6 @@ const signupForm = document.getElementById('signup-form');
 const authMessage = document.getElementById('auth-message');
 const loginBtn = document.getElementById('login-btn');
 const signupBtn = document.getElementById('signup-btn');
-
-// الحصول على رمز الإحالة من URL إذا وجد
-const urlParams = new URLSearchParams(window.location.search);
-const refCode = urlParams.get('ref');
-let referredBy = null;
-
-// إذا كان هناك رمز إحالة، نبحث عن المستخدم الذي يملك هذا الرمز
-if (refCode) {
-  const usersRef = ref(database, 'users');
-  const userQuery = query(usersRef, orderByChild('referralCode'), equalTo(refCode));
-  
-  onValue(userQuery, (snapshot) => {
-    if (snapshot.exists()) {
-      const userData = snapshot.val();
-      referredBy = Object.keys(userData)[0]; // الحصول على ID المستخدم
-    }
-  }, { onlyOnce: true });
-}
 
 // تغيير علامات التوثيق
 authTabs.addEventListener('click', (e) => {
@@ -86,6 +68,7 @@ signupBtn.addEventListener('click', async (e) => {
     const email = document.getElementById('signup-email').value;
     const password = document.getElementById('signup-password').value;
     const address = document.getElementById('signup-address').value;
+    const referralCodeInput = document.getElementById('signup-referral').value;
     
     if (!name || !phone || !email || !password) {
         showAuthMessage('يرجى ملء جميع الحقول الإلزامية', 'error');
@@ -93,6 +76,17 @@ signupBtn.addEventListener('click', async (e) => {
     }
     
     try {
+        let referredBy = null;
+        
+        // إذا كان هناك رمز إحالة، البحث عن المستخدم الذي يملكه
+        if (referralCodeInput) {
+            referredBy = await getUserIdByReferralCode(referralCodeInput);
+            if (!referredBy) {
+                showAuthMessage('رمز الإحالة غير صحيح', 'error');
+                return;
+            }
+        }
+        
         const userCredential = await createUserWithEmailAndPassword(auth, email, password);
         const user = userCredential.user;
         
