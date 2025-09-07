@@ -219,3 +219,143 @@ tr:hover {
         padding: 0.75rem;
     }
 }
+
+
+
+
+/* إضافة هذه الأنماط إلى groups.css */
+
+.network-container {
+    margin-top: 2rem;
+    padding: 1.5rem;
+    background: white;
+    border-radius: 12px;
+    box-shadow: var(--shadow-md);
+}
+
+.network-node {
+    margin: 1rem 0;
+    padding: 1rem;
+    border: 1px solid var(--gray-200);
+    border-radius: 8px;
+    background: var(--gray-100);
+}
+
+.network-node.level-0 {
+    background: #e0f7fa;
+    border-color: #00bcd4;
+}
+
+.network-node.level-1 {
+    background: #f1f8e9;
+    border-color: #8bc34a;
+}
+
+.network-node.level-2 {
+    background: #fff3e0;
+    border-color: #ff9800;
+}
+
+.network-node.level-3 {
+    background: #fbe9e7;
+    border-color: #ff5722;
+}
+
+.node-header {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.node-header img {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+}
+
+.node-info {
+    flex: 1;
+}
+
+.node-info h4 {
+    margin: 0;
+    color: var(--dark-color);
+}
+
+.node-info p {
+    margin: 0.25rem 0;
+    color: var(--gray-600);
+    font-size: 0.9rem;
+}
+
+.user-level {
+    font-size: 0.8rem;
+    color: var(--gray-500);
+}
+
+.node-stats {
+    text-align: center;
+}
+
+.points {
+    display: inline-block;
+    padding: 0.25rem 0.5rem;
+    background: var(--primary-color);
+    color: white;
+    border-radius: 12px;
+    font-size: 0.8rem;
+}
+
+.expand-btn {
+    margin-top: 0.5rem;
+    padding: 0.5rem 1rem;
+    background: var(--gray-200);
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-family: 'Tajawal', sans-serif;
+}
+
+.expand-btn:hover {
+    background: var(--gray-300);
+}
+
+.node-children {
+    margin: 1rem 0 0 2rem;
+    padding-left: 1rem;
+    border-left: 2px solid var(--gray-300);
+}
+
+.loading, .empty-state, .error {
+    text-align: center;
+    padding: 2rem;
+    color: var(--gray-500);
+}
+
+.error {
+    color: #f44336;
+}
+
+.status-badge {
+    padding: 0.25rem 0.5rem;
+    border-radius: 12px;
+    font-size: 0.8rem;
+}
+
+.status-badge.completed {
+    background: #e8f5e9;
+    color: #2e7d32;
+}
+
+.status-badge.pending {
+    background: #fff3e0;
+    color: #ef6c00;
+}
+
+.status-badge.indirect {
+    background: #e3f2fd;
+    color: #1565c0;
+}
