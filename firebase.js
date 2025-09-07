@@ -1,4 +1,4 @@
-// firebase.js
+// firebase.js (محدث للإصدار 9+)
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js";
 import { getAnalytics } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-analytics.js";
 import { 
@@ -16,12 +16,13 @@ import {
   set, 
   push, 
   onValue, 
-  serverTimestamp, 
-  update, 
+  get,
+  update,
   remove, 
   query, 
   orderByChild, 
-  equalTo 
+  equalTo,
+  serverTimestamp
 } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-database.js";
 import { 
   getStorage, 
@@ -71,6 +72,6 @@ try {
 export { 
   app, analytics, auth, database, storage,
   signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut,
-  ref, set, push, onValue, serverTimestamp, update, remove, query, orderByChild, equalTo,
+  ref, set, push, onValue, get, update, remove, query, orderByChild, equalTo, serverTimestamp,
   storageRef, uploadBytesResumable, getDownloadURL
 };
